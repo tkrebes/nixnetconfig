@@ -1,0 +1,8 @@
+# Test dependencies
+flake8
+pytest
+pytest-cov
+
+# flake8 dependencies
+hacking
+pep8-naming
