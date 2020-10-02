@@ -31,6 +31,21 @@ setup(
         'nisyscfg',
     ],
     packages=find_packages(),
+    tests_require=['pytest'],
+    classifiers=[
+        "Development Status :: 1 - Planning",
+        "Intended Audience :: Developers",
+        "Intended Audience :: Manufacturing",
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: Microsoft :: Windows",
+        "Operating System :: POSIX",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Topic :: System :: Hardware :: Hardware Drivers"
+    ],
     entry_points={
         'console_scripts': [
             'nixnetconfig=nixnetconfig.__main__:main'
