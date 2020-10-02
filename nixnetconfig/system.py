@@ -1,4 +1,4 @@
-from nisyscfg2 import Session
+from nisyscfg import Session
 
 
 _LINE_INDENT = "    "
@@ -6,7 +6,7 @@ _LINE_INDENT = "    "
 
 class InterfaceBranch(object):
     def __init__(self, resource, indent):
-        self.name = resource.ExpertUserAlias[0]
+        self.name = resource.expert_user_alias[0]
         self.indent = _LINE_INDENT * indent
 
     def report(self):
@@ -15,13 +15,17 @@ class InterfaceBranch(object):
 
 class DeviceBranch(object):
     def __init__(self, expert_name, session: Session, resource, indent=1):
-        self.name = resource.ProductName
-        self.serial_num = resource.SerialNumber
-        self.firmware_revision = resource.FirmwareRevision
-        self.device_link_name = resource.ProvidesLinkName
+        self.name = resource.product_name
+        self.serial_num = resource.serial_number
+        self.firmware_revision = resource.firmware_revision
+        self.device_link_name = resource.provides_link_name
         self.interfaces = []
         self.indent = _LINE_INDENT * indent
-        for interface_resource in session.find_hardware(expert_names=[expert_name], IsDevice=False, ConnectsToLinkName=self.device_link_name):
+
+        filter = session.create_filter()
+        filter.is_device = False
+        filter.connects_to_link_name = self.device_link_name
+        for interface_resource in session.find_hardware(filter=filter, expert_names=[expert_name]):
             self.interfaces.append(InterfaceBranch(interface_resource, indent + 1))
 
     def report(self):
@@ -35,11 +39,15 @@ class DeviceBranch(object):
 
 class ChassisBranch(object):
     def __init__(self, expert_name, session: Session, resource):
-        self.name = resource.ExpertUserAlias[0]
-        self.serial_num = resource.SerialNumber
-        self.chassis_link_name = resource.ProvidesLinkName
+        self.name = resource.expert_user_alias[0]
+        self.serial_num = resource.serial_number
+        self.chassis_link_name = resource.provides_link_name
         self.devices = []
-        for device_resource in session.find_hardware(expert_names=[expert_name], IsDevice=True, ConnectsToLinkName=self.chassis_link_name):
+
+        filter = session.create_filter()
+        filter.is_device = True
+        filter.connects_to_link_name = self.chassis_link_name
+        for device_resource in session.find_hardware(filter=filter, expert_names=[expert_name]):
             self.devices.append(DeviceBranch(expert_name, session, device_resource, 2))
 
     def report(self):
@@ -53,10 +61,16 @@ class SystemTree(object):
     def __init__(self, expert_name, session: Session):
         self.chassis = []
         self.devices = []
-        for chassis_resource in session.find_hardware(expert_names=[], IsChassis=True):
+
+        chassis_filter = session.create_filter()
+        chassis_filter.is_chassis = True
+        for chassis_resource in session.find_hardware(filter=chassis_filter, expert_names=[]):
             self.chassis.append(ChassisBranch(expert_name, session, chassis_resource))
 
-        for device_resource in session.find_hardware(expert_names=[expert_name], IsDevice=True, ConnectsToLinkName=""):
+        device_filter = session.create_filter()
+        device_filter.is_device = True
+        device_filter.connects_to_link_name = ""
+        for device_resource in session.find_hardware(filter=device_filter, expert_names=[expert_name]):
             self.devices.append(DeviceBranch(expert_name, session, device_resource))
 
     def report(self):

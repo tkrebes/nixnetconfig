@@ -1,6 +1,6 @@
 import configparser
 import logging
-import nisyscfg2 as nisyscfg
+import nisyscfg
 from nixnetconfig.system import SystemTree
 import platform
 
@@ -36,7 +36,10 @@ def enumerate_xnet_devices():
 def rename_xnet_port_name(current_port_name, new_port_name):
     with nisyscfg.Session() as session:
         try:
-            resource = next(session.find_hardware(expert_names=_XNET_EXPERT_NAME, IsDevice=False, UserAlias=current_port_name))
+            filter = session.create_filter()
+            filter.is_device = False
+            filter.user_alias = current_port_name
+            resource = next(session.find_hardware(filter=filter, expert_names=_XNET_EXPERT_NAME))
             resource.rename(new_port_name)
         except StopIteration:
             raise PortNotFoundError(current_port_name)
@@ -45,8 +48,15 @@ def rename_xnet_port_name(current_port_name, new_port_name):
 def assign_xnet_port_name(serial_number, port_number, port_name):
     with nisyscfg.Session() as session:
         try:
-            resource = next(session.find_hardware(expert_names=_XNET_EXPERT_NAME, IsDevice=True, SerialNumber=serial_number))
-            for interface_resource in session.find_hardware(expert_names=_XNET_EXPERT_NAME, IsDevice=False, ConnectsToLinkName=resource.ProvidesLinkName):
+            device_filter = session.create_filter()
+            device_filter.is_device = True
+            device_filter.serial_number = serial_number
+            resource = next(session.find_hardware(filter=device_filter, expert_names=_XNET_EXPERT_NAME))
+
+            interface_filter = session.create_filter()
+            interface_filter.is_device = False
+            interface_filter.connects_to_link_name = resource.provides_link_name
+            for interface_resource in session.find_hardware(filter=interface_filter, expert_names=_XNET_EXPERT_NAME):
                 if interface_resource.xnet.port_number == port_number:
                     interface_resource.rename(port_name)
                     return
@@ -58,7 +68,10 @@ def assign_xnet_port_name(serial_number, port_number, port_name):
 def blink_xnet_port(port_name, mode):
     with nisyscfg.Session() as session:
         try:
-            resource = next(session.find_hardware(expert_names=_XNET_EXPERT_NAME, IsDevice=False, UserAlias=port_name))
+            filter = session.create_filter()
+            filter.is_device = False
+            filter.user_alias = port_name
+            resource = next(session.find_hardware(filter=filter, expert_names=_XNET_EXPERT_NAME))
             resource.xnet.blink = {'on': 1, 'off': 0}[mode]
             resource.save_changes()
             logger.info(port_name + ': blink-LED is ' + mode)
@@ -69,7 +82,10 @@ def blink_xnet_port(port_name, mode):
 def upgrade_xnet_firmware(serial_number):
     with nisyscfg.Session() as session:
         try:
-            resource = next(session.find_hardware(expert_names=_XNET_EXPERT_NAME, IsDevice=True, SerialNumber=serial_number))
+            filter = session.create_filter()
+            filter.is_device = True
+            filter.serial_number = serial_number
+            resource = next(session.find_hardware(filter=filter, expert_names=_XNET_EXPERT_NAME))
             logger.info('Starting firmware upgrade')
             resource.upgrade_firmware(version="0")
             logger.info('Completed firmware upgrade')
@@ -80,7 +96,10 @@ def upgrade_xnet_firmware(serial_number):
 def self_test_xnet_device(serial_number):
     with nisyscfg.Session() as session:
         try:
-            resource = next(session.find_hardware(expert_names=_XNET_EXPERT_NAME, IsDevice=True, SerialNumber=serial_number))
+            filter = session.create_filter()
+            filter.is_device = True
+            filter.serial_number = serial_number
+            resource = next(session.find_hardware(filter=filter, expert_names=_XNET_EXPERT_NAME))
             logger.info('Starting self test')
             # TODO  xnet sysapi expert will report its error code when a function failed, include self_test,
             #       but we may need to catch LibraryError for error code that is not defined in class Status(CtypesEnum)
@@ -100,6 +119,6 @@ def get_xnet_expert_version():
         with nisyscfg.Session() as session:
             sw = session.get_installed_software_components()
             for component in sw:
-                if component['id'] == str('ni-xnet'):
-                    print(component['id'], component['version'])
+                if component.id == 'ni-xnet':
+                    print(component.id, component.version)
 

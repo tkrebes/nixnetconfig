@@ -3,6 +3,7 @@ from nixnetconfig import __main__
 from nixnetconfig import parser
 from nixnetconfig import utilities
 import pytest
+import typing
 from unittest import mock
 
 
@@ -161,7 +162,10 @@ def test_main_prints_to_stderr_raise_system_exit_when_command_raise_exception(st
 @mock.patch('shutil.get_terminal_size', spec=True)
 @mock.patch('sys.stdout', new_callable=io.StringIO)
 def test_main_prints_help_word_wrapped_to_console_width(stout_mock, get_terminal_size_mock, width):
-    get_terminal_size_mock.return_value = (width, 20)  # (columns, rows)
+    class TerminalSize(typing.NamedTuple):
+        columns: int
+        lines: int
+    get_terminal_size_mock.return_value = TerminalSize(width, 20)  # (columns, rows)
     with pytest.raises(SystemExit):
         run_nixnetconfig('-h')
     summary_found = False

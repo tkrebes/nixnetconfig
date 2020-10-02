@@ -28,8 +28,7 @@ setup(
     maintainer_email="tyler.krehbiel@ni.com",
     include_package_data=False,
     install_requires=[
-        'nisyscfg2',
-        'nisyscfg2-xnet',
+        'nisyscfg',
     ],
     packages=find_packages(),
     entry_points={
