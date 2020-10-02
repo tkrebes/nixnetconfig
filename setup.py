@@ -24,7 +24,8 @@ setup(
     version=version,
     description=description,
     author="National Instruments",
-    author_email="no-reply@ni.com",
+    maintainer="Tyler Krehbiel",
+    maintainer_email="tyler.krehbiel@ni.com",
     include_package_data=False,
     install_requires=[
         'nisyscfg2',
